@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="utf-8">
+  
+
+  
+  <title>虚拟机类加载机制 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="1.类的生命周期加载 -&amp;gt; 验证 -&amp;gt; 准备 -&amp;gt; 解析 -&amp;gt; 初始化 -&amp;gt; 使用 -&amp;gt; 卸载 2.类初始化（主动引用）1.遇到new，getstatic,putstatic,invokestatic字节码指令  2.进行反射调用时，如果这个类没有进行初始化，就会先触发初始化  3.初始化一个子类，如果父类还没有初始化，那么就先初始化父类  4.虚拟机启动，先初">
+<meta property="og:type" content="article">
+<meta property="og:title" content="虚拟机类加载机制">
+<meta property="og:url" content="http://yoursite.com/2019/06/07/虚拟机类加载机制/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1.类的生命周期加载 -&amp;gt; 验证 -&amp;gt; 准备 -&amp;gt; 解析 -&amp;gt; 初始化 -&amp;gt; 使用 -&amp;gt; 卸载 2.类初始化（主动引用）1.遇到new，getstatic,putstatic,invokestatic字节码指令  2.进行反射调用时，如果这个类没有进行初始化，就会先触发初始化  3.初始化一个子类，如果父类还没有初始化，那么就先初始化父类  4.虚拟机启动，先初">
+<meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2019-06-07T07:37:49.434Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="虚拟机类加载机制">
+<meta name="twitter:description" content="1.类的生命周期加载 -&amp;gt; 验证 -&amp;gt; 准备 -&amp;gt; 解析 -&amp;gt; 初始化 -&amp;gt; 使用 -&amp;gt; 卸载 2.类初始化（主动引用）1.遇到new，getstatic,putstatic,invokestatic字节码指令  2.进行反射调用时，如果这个类没有进行初始化，就会先触发初始化  3.初始化一个子类，如果父类还没有初始化，那么就先初始化父类  4.虚拟机启动，先初">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+</html>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-虚拟机类加载机制" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/06/07/虚拟机类加载机制/" class="article-date">
+  <time datetime="2019-06-07T06:05:28.000Z" itemprop="datePublished">2019-06-07</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      虚拟机类加载机制
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="1-类的生命周期"><a href="#1-类的生命周期" class="headerlink" title="1.类的生命周期"></a>1.类的生命周期</h2><pre><code>加载 -&gt; 验证 -&gt; 准备 -&gt; 解析 -&gt; 初始化 -&gt; 使用 -&gt; 卸载
+</code></pre><h2 id="2-类初始化（主动引用）"><a href="#2-类初始化（主动引用）" class="headerlink" title="2.类初始化（主动引用）"></a>2.类初始化（主动引用）</h2><pre><code>1.遇到new，getstatic,putstatic,invokestatic字节码指令
+
+2.进行反射调用时，如果这个类没有进行初始化，就会先触发初始化
+
+3.初始化一个子类，如果父类还没有初始化，那么就先初始化父类
+
+4.虚拟机启动，先初始化主类
+
+（被动引用）
+
+    1.调用静态字段的类，只有定义该字段的类才会被初始化，例如：子类调用父类的静态字段
+
+    并不会导致子类的初始化。
+
+    2.通过数组定义引用类，不会导致此类的初始化
+
+    3.常量在编译期间，就会存入类的常量池，就是static final 修饰的
+</code></pre><h2 id="3-关于static-final-和static修饰的变量的初始值"><a href="#3-关于static-final-和static修饰的变量的初始值" class="headerlink" title="3.关于static final 和static修饰的变量的初始值"></a>3.关于static final 和static修饰的变量的初始值</h2><pre><code>由于在编译期间，javac会给static final修饰的变量增加一个ContantValue的属性，这个属性的含义是
+
+通知jvm 为该变量完成初始化，而static修饰的变量他们的初始值是jvm规定的基本数据类型（不是Java
+
+的基本数据类型）的初始值。
+
+如：reference （引用类型）= null; 比如String类型的初始值为null;
+</code></pre><h2 id="4-关于双亲委派机制"><a href="#4-关于双亲委派机制" class="headerlink" title="4.关于双亲委派机制"></a>4.关于双亲委派机制</h2><pre><code>1.jvm有三个类加载器，启动类加载器，负责加载程序运行的类库
+
+扩展类加载器，用于加载Java的扩展包
+
+应用程序类加载器，用于加载我们所写的程序
+
+2.这个是三个类加载器，除了启动类加载器，其余的加载器都有权限知道启动类加载器是否加载了某个类
+
+，而不能让其区加载我们的类，关于委派，就是应用程序类加载其加载某个类时，首先会让其父类区尝试加载
+
+父类再去询问启动类加载器是否加载过，是，则返回该类实例的引用，否则让应用程序类去自行加载该类
+</code></pre>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2019/06/07/虚拟机类加载机制/" data-id="cjwls28w80001ybr0vkn9d8ro" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2019/06/05/垃圾收集器分析/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">垃圾收集器分析</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/06/">June 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2019/06/07/虚拟机类加载机制/">虚拟机类加载机制</a>
+          </li>
+        
+          <li>
+            <a href="/2019/06/05/垃圾收集器分析/">垃圾收集器分析</a>
+          </li>
+        
+          <li>
+            <a href="/2019/06/04/jvm内存模型/">jvm内存区域划分</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2019 YOYOMM<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>
